@@ -5,7 +5,7 @@
 const os = require("os");
 const express = require("express");
 const cors = require("cors");
-
+const path = require("path");
 const db = require("./db");
 const { requiereSesion } = require("./auth");
 const personasRouter = require("./routes/personas");
@@ -15,7 +15,7 @@ const authRouter = require("./routes/auth");
 const adminRouter = require("./routes/admin");
 
 const app = express();
-const PUERTO = 3000;
+const PUERTO = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
@@ -42,6 +42,15 @@ app.use("/api/auth", authRouter);
 
 // Todo lo que empiece con /api/admin exige haber iniciado sesion primero.
 app.use("/api/admin", requiereSesion, adminRouter);
+
+
+// Sirve los archivos del frontend (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname, "../../frontend")));
+
+// Cualquier ruta que no sea /api/... devuelve el index.html
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../../frontend/index.html"));
+});
 
 function obtenerIpLocal() {
   const interfaces = os.networkInterfaces();
