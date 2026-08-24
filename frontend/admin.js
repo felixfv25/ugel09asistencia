@@ -4,7 +4,7 @@
 // usuario, no un artifact de Claude, asi que localStorage funciona bien
 // aqui y es lo apropiado para este caso).
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "/api";
 const CLAVE_TOKEN = "ugel09_admin_token";
 
 const vistaLogin = document.getElementById("vista-login");
