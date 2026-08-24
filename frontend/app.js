@@ -4,7 +4,7 @@
 //  2. Buscar el DNI y autocompletar si la persona ya existe.
 //  3. Enviar el formulario para guardar el ingreso.
 
-const API_URL = "http://localhost:3000/api";
+const API_URL = "/api";
 
 const mensajeEl = document.getElementById("mensaje");
 const form = document.getElementById("form-registro");
