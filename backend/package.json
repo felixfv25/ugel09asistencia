@@ -1,0 +1,16 @@
+{
+  "name": "ugel09-asistencia-backend",
+  "version": "1.0.0",
+  "description": "API para el registro de asistencia de visitantes externos - UGEL 09",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "exceljs": "^4.4.0",
+    "express": "^4.19.2"
+  }
+}

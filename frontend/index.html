@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <title>UGEL 09 - Registro de asistencia</title>
+  <link rel="stylesheet" href="estilos.css" />
+</head>
+<body>
+  <header>
+    <div class="logo">09</div>
+    <div>
+      <h1>UGEL 09</h1>
+      <p>Registro de asistencia</p>
+    </div>
+  </header>
+
+  <main>
+    <div id="mensaje" class="estado estado-flotante" style="display: none;"></div>
+
+    <div class="layout">
+      <div class="columna-form">
+        <form id="form-registro" class="tarjeta">
+          <h2 class="titulo-seccion">Datos de la visita</h2>
+          <p class="ayuda" style="margin-bottom: 16px;">
+            Ingresar DNI: si ya nos visitaste antes, tus datos se completan solos.
+          </p>
+
+          <div class="campo">
+            <label for="dni">DNI</label>
+            <div class="fila-dni">
+              <input type="text" id="dni" maxlength="8" inputmode="numeric" placeholder="Ej: 12345678" required />
+              <button type="button" id="btn-buscar" class="boton-secundario">Buscar</button>
+            </div>
+            <p id="ayuda-dni" class="ayuda"></p>
+          </div>
+
+          <div class="campo">
+            <label for="nombres">Nombres</label>
+            <input type="text" id="nombres" placeholder="Nombres completos" required />
+          </div>
+
+          <div class="campo">
+            <label for="apellidos">Apellidos</label>
+            <input type="text" id="apellidos" placeholder="Apellidos completos" required />
+          </div>
+
+          <div class="campo">
+            <label for="celular">Celular</label>
+            <input type="text" id="celular" inputmode="numeric" placeholder="Ej: 987654321" />
+          </div>
+
+          <div class="campo">
+            <label for="area">Área / oficina de destino</label>
+            <select id="area" required>
+              <option value="">Selecciona un área...</option>
+            </select>
+          </div>
+
+          <div class="campo">
+            <label for="asunto">Asunto de la visita</label>
+            <select id="asunto" required>
+              <option value="">Selecciona un asunto...</option>
+            </select>
+          </div>
+
+          <button type="submit" class="boton-principal">Registrar ingreso</button>
+        </form>
+
+        <p class="enlace-admin">
+          <a href="admin.html">Panel de administración</a>
+        </p>
+      </div>
+
+      <div class="columna-info">
+        <section class="tarjeta tarjeta-tabla">
+          <div class="encabezado-tabla">
+            <h2 class="titulo-seccion">Visitas de hoy</h2>
+            <button type="button" id="btn-actualizar" class="boton-secundario">Actualizar</button>
+          </div>
+          <div class="contenedor-tabla">
+            <table id="tabla-visitas">
+              <thead>
+                <tr>
+                  <th>DNI</th>
+                  <th>Nombre</th>
+                  <th>Ingreso</th>
+                  <th>Salida</th>
+                  <th>Área</th>
+                  <th>Asunto</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="cuerpo-tabla">
+                <tr><td colspan="7" class="celda-vacia">Cargando...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="tarjeta">
+          <h2 class="titulo-seccion">Exportar a Excel</h2>
+          <p class="ayuda" style="margin-bottom: 14px;">
+            Descarga un archivo .xlsx 
+          </p>
+
+          <div class="fila-exportar">
+            <div class="campo">
+              <label for="fecha-desde">Desde</label>
+              <input type="date" id="fecha-desde" />
+            </div>
+            <div class="campo">
+              <label for="fecha-hasta">Hasta</label>
+              <input type="date" id="fecha-hasta" />
+            </div>
+          </div>
+
+          <div class="campo">
+            <label for="area-exportar">Área (opcional)</label>
+            <select id="area-exportar">
+              <option value="">Todas las áreas</option>
+            </select>
+          </div>
+
+          <button type="button" id="btn-exportar" class="boton-principal">Descargar Excel</button>
+        </section>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
