@@ -75,35 +75,53 @@ db.exec(`
 // --- Datos iniciales (solo se insertan la primera vez que se crea la BD) ---
 
 const AREAS_INICIALES = [
-  "Trámite documentario",
-  "Recursos humanos (RRHH)",
-  "Asesoría legal",
-  "Gestión pedagógica",
-  "Gestión institucional",
-  "Gestión administrativa",
+  "Convivencia escolar",
+  "EPPD-D",
+  "Secretaría Técnica",
+  "Dirección",
+  "Actas y Certificados",
+  "Notificación",
+  "T.D.",
+  "Tesorería",
+  "Constancia de Pago",
+  "Informática",
+  "PGA",
+  "DGP",
+  "Almacén",
+  "Abastecimiento",
+  "Pronoei",
+  "Personal",
+  "OCI",
+  "B.S.",
   "Escalafón",
+  "Médico / Enfermería",
+  "Contabilidad",
+  "Supervisor de Colegio Privado",
+  "Archivo",
+  "PIID",
+  "AGI",
+  "A.L.",
+  "Imagen",
+  "PREVAED",
   "Otro",
 ];
 
 const ASUNTOS_INICIALES = [
-  "Consulta",
-  "Entrega de documento",
-  "Firma",
-  "Recojo de documento",
-  "Reclamo",
+  "Revisar Expediente",
+  "Realizar Denuncia",
+  "Seguimiento de Expediente",
+  "Quejas",
+  "Recojo de Documento",
   "Otro",
 ];
 
-const yaHayAreas = db.prepare("SELECT COUNT(*) AS total FROM areas").get().total > 0;
-if (!yaHayAreas) {
-  const insertar = db.prepare("INSERT INTO areas (nombre) VALUES (?)");
-  AREAS_INICIALES.forEach((nombre) => insertar.run(nombre));
-}
+// INSERT OR IGNORE (en vez de solo insertar si la tabla esta vacia): asi, si
+// ya tenias areas/asuntos guardados desde antes, esto SOLO agrega los que
+// falten de esta lista, sin duplicar ni borrar nada de lo que ya tenias.
+const insertarArea = db.prepare("INSERT OR IGNORE INTO areas (nombre) VALUES (?)");
+AREAS_INICIALES.forEach((nombre) => insertarArea.run(nombre));
 
-const yaHayAsuntos = db.prepare("SELECT COUNT(*) AS total FROM asuntos").get().total > 0;
-if (!yaHayAsuntos) {
-  const insertar = db.prepare("INSERT INTO asuntos (nombre) VALUES (?)");
-  ASUNTOS_INICIALES.forEach((nombre) => insertar.run(nombre));
-}
+const insertarAsunto = db.prepare("INSERT OR IGNORE INTO asuntos (nombre) VALUES (?)");
+ASUNTOS_INICIALES.forEach((nombre) => insertarAsunto.run(nombre));
 
 module.exports = db;
