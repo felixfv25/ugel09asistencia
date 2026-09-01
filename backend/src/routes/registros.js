@@ -15,10 +15,34 @@ function horaActualPeru() {
   return { fecha, hora };
 }
 
+// Horario de atencion: 8:30am a 3:30pm, hora de Peru (America/Lima).
+// Se calcula con Intl usando esa zona horaria a proposito, para que el
+// bloqueo sea correcto sin importar en que zona horaria este el servidor
+// donde corre la app (ej. Render puede correr en UTC).
+const HORA_APERTURA = "08:30";
+const HORA_CIERRE = "15:30";
+
+function dentroDeHorarioAtencion() {
+  const horaLima = new Intl.DateTimeFormat("es-PE", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(new Date()); // "HH:MM"
+
+  return horaLima >= HORA_APERTURA && horaLima <= HORA_CIERRE;
+}
+
 // POST /api/registros
 // Body esperado: { dni, nombres, apellidos, celular, area, asunto }
 router.post("/", (req, res) => {
   const { dni, nombres, apellidos, celular, area, asunto } = req.body || {};
+
+  if (!dentroDeHorarioAtencion()) {
+    return res.status(403).json({
+      error: `El registro de visitas solo está disponible de ${HORA_APERTURA} am a 3:30 pm.`,
+    });
+  }
 
   // Validaciones basicas: campos obligatorios y formato del DNI.
   if (!dni || !/^\d{8}$/.test(dni)) {
