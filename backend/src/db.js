@@ -72,6 +72,17 @@ db.exec(`
   );
 `);
 
+// --- Usuario de porteria por defecto ---
+// Se crea solo si no existe (INSERT OR IGNORE), asi que si luego cambias
+// la contrasena desde el codigo o con el truco del reset temporal, esto
+// no la vuelve a sobreescribir en cada reinicio del servidor.
+// Usuario:    porteria
+// Contraseña: porteria09   <-- cambiala cuando puedas, mismo metodo que usamos para el admin.
+const { hashPassword } = require("./auth");
+db.prepare(
+  "INSERT OR IGNORE INTO usuarios (usuario, password_hash) VALUES (?, ?)"
+).run("porteria", hashPassword("porteria09"));
+
 // --- Datos iniciales (solo se insertan la primera vez que se crea la BD) ---
 
 const AREAS_INICIALES = [
