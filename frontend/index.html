@@ -13,9 +13,30 @@
       <h1>UGEL 09</h1>
       <p>Registro de asistencia</p>
     </div>
+    <button type="button" id="btn-salir" class="boton-header" style="display: none;">Cerrar sesión</button>
   </header>
 
   <main>
+    <!-- Pantalla de login: solo el personal de porteria con la clave puede entrar -->
+    <div id="vista-login" class="vista-centrada">
+      <div id="mensaje-login" class="estado" style="display: none;"></div>
+      <form id="form-login" class="tarjeta">
+        <h2 class="titulo-seccion">Iniciar sesión</h2>
+        <p class="ayuda" style="margin-bottom: 16px;">Acceso exclusivo para personal de portería de la UGEL 09.</p>
+        <div class="campo">
+          <label for="login-usuario">Usuario</label>
+          <input type="text" id="login-usuario" required autocomplete="username" />
+        </div>
+        <div class="campo">
+          <label for="login-password">Contraseña</label>
+          <input type="password" id="login-password" required autocomplete="current-password" />
+        </div>
+        <button type="submit" class="boton-principal">Iniciar sesión</button>
+      </form>
+    </div>
+
+    <!-- Pantalla de registro: visible solo despues de iniciar sesion -->
+    <div id="vista-formulario" style="display: none;">
     <div id="mensaje" class="estado estado-flotante" style="display: none;"></div>
 
     <div class="layout">
@@ -56,12 +77,20 @@
               <option value="">Selecciona un área...</option>
             </select>
           </div>
+          <div class="campo" id="campo-area-otro" style="display: none;">
+            <label for="area-otro">Especifica el área / oficina</label>
+            <input type="text" id="area-otro" placeholder="Escribe el área u oficina" />
+          </div>
 
           <div class="campo">
             <label for="asunto">Asunto de la visita</label>
             <select id="asunto" required>
               <option value="">Selecciona un asunto...</option>
             </select>
+          </div>
+          <div class="campo" id="campo-asunto-otro" style="display: none;">
+            <label for="asunto-otro">Especifica el asunto</label>
+            <input type="text" id="asunto-otro" placeholder="Escribe el asunto de la visita" />
           </div>
 
           <button type="submit" class="boton-principal">Registrar ingreso</button>
@@ -125,6 +154,7 @@
           <button type="button" id="btn-exportar" class="boton-principal">Descargar Excel</button>
         </section>
       </div>
+    </div>
     </div>
   </main>
 
