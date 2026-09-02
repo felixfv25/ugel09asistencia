@@ -29,15 +29,19 @@ app.get("/api/salud", (req, res) => {
 // Endpoint para que el formulario sepa que opciones mostrar en los
 // desplegables de Area y Asunto. Ahora se leen de la base de datos, para
 // que el panel de administracion las pueda editar sin tocar codigo.
-app.get("/api/opciones", (req, res) => {
+// Exige sesion (login de porteria) igual que el resto del formulario.
+app.get("/api/opciones", requiereSesion, (req, res) => {
   const areas = db.prepare("SELECT nombre FROM areas ORDER BY nombre").all().map((f) => f.nombre);
   const asuntos = db.prepare("SELECT nombre FROM asuntos ORDER BY nombre").all().map((f) => f.nombre);
   res.json({ areas, asuntos });
 });
 
-app.use("/api/personas", personasRouter);
-app.use("/api/registros", registrosRouter);
-app.use("/api/exportar", exportarRouter);
+// Todo lo que usa la pantalla de registro (porteria) exige haber
+// iniciado sesion primero, para que nadie que solo tenga el link pueda
+// registrar visitas sin autorizacion.
+app.use("/api/personas", requiereSesion, personasRouter);
+app.use("/api/registros", requiereSesion, registrosRouter);
+app.use("/api/exportar", requiereSesion, exportarRouter);
 app.use("/api/auth", authRouter);
 
 // Todo lo que empiece con /api/admin exige haber iniciado sesion primero.
