@@ -201,6 +201,40 @@ document.getElementById("btn-crear-usuario").addEventListener("click", () => {
     .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
 });
 
+// --- Descargar base de datos (copia de solo lectura) ---
+document.getElementById("btn-descargar-db").addEventListener("click", () => {
+  const boton = document.getElementById("btn-descargar-db");
+  boton.disabled = true;
+  boton.textContent = "Descargando...";
+
+  fetch(`${API_URL}/admin/descargar-base-de-datos`, {
+    headers: { Authorization: `Bearer ${obtenerToken()}` },
+  })
+    .then(async (res) => {
+      if (res.status === 401) {
+        cerrarSesionLocal();
+        throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
+      }
+      if (!res.ok) throw new Error("No se pudo descargar la base de datos.");
+      return res.blob();
+    })
+    .then((blob) => {
+      const url = URL.createObjectURL(blob);
+      const enlace = document.createElement("a");
+      enlace.href = url;
+      enlace.download = `asistencia_${hoyISO}.db`;
+      document.body.appendChild(enlace);
+      enlace.click();
+      enlace.remove();
+      URL.revokeObjectURL(url);
+    })
+    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"))
+    .finally(() => {
+      boton.disabled = false;
+      boton.textContent = "Descargar base de datos";
+    });
+});
+
 // --- Al cargar la página: ¿ya hay una sesión guardada? ---
 if (obtenerToken()) {
   mostrarPanel();

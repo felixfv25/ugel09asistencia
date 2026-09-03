@@ -87,31 +87,30 @@ db.prepare(
 
 const AREAS_INICIALES = [
   "Convivencia escolar",
-  "EPPD-D",
+  "CPPA-Docente",
   "Secretaría Técnica",
   "Dirección",
   "Actas y Certificados",
   "Notificación",
-  "T.D.",
   "Tesorería",
   "Constancia de Pago",
   "Informática",
   "PGA",
-  "DGP",
+  "DGP - Área de Gestión Pedagógica",
   "Almacén",
   "Abastecimiento",
   "Pronoei",
   "Personal",
   "OCI",
-  "B.S.",
+  "B.S - Bienestar Social",
   "Escalafón",
   "Médico / Enfermería",
   "Contabilidad",
   "Supervisor de Colegio Privado",
   "Archivo",
   "PIID",
-  "AGI",
-  "A.L.",
+  "AGI - Área de Gestión Institucional",
+  "Asesoría Legal",
   "Imagen",
   "PREVAED",
   "Otro",
@@ -125,6 +124,22 @@ const ASUNTOS_INICIALES = [
   "Recojo de Documento",
   "Otro",
 ];
+
+// --- Corregir/renombrar/eliminar areas antiguas ---
+// Esto es para bases de datos que ya estaban en uso (como la de Render) y
+// ya tenian los nombres viejos guardados. Si el nombre viejo no existe
+// (por ejemplo, en una instalacion nueva), el UPDATE/DELETE simplemente
+// no hace nada, sin dar error.
+db.prepare("UPDATE areas SET nombre = 'CPPA-Docente' WHERE nombre = 'EPPD-D'").run();
+db.prepare("DELETE FROM areas WHERE nombre = 'T.D.'").run();
+db.prepare(
+  "UPDATE areas SET nombre = 'DGP - Área de Gestión Pedagógica' WHERE nombre = 'DGP'"
+).run();
+db.prepare("UPDATE areas SET nombre = 'B.S - Bienestar Social' WHERE nombre = 'B.S.'").run();
+db.prepare(
+  "UPDATE areas SET nombre = 'AGI - Área de Gestión Institucional' WHERE nombre = 'AGI'"
+).run();
+db.prepare("UPDATE areas SET nombre = 'Asesoría Legal' WHERE nombre = 'A.L.'").run();
 
 // INSERT OR IGNORE (en vez de solo insertar si la tabla esta vacia): asi, si
 // ya tenias areas/asuntos guardados desde antes, esto SOLO agrega los que
