@@ -66,18 +66,48 @@ function guardarToken(token) {
 
 function borrarToken() {
   localStorage.removeItem(CLAVE_TOKEN);
+  localStorage.removeItem("ugel09_porteria_expira");
 }
 
 const DURACION_SESION_MS = 20 * 60 * 1000; // 20 minutos, igual que en el backend
-let temporizadorSesion = null;
+const CLAVE_EXPIRA = "ugel09_porteria_expira";
+let intervaloSesion = null;
 
-function iniciarTemporizadorSesion() {
-  if (temporizadorSesion) clearTimeout(temporizadorSesion);
-  temporizadorSesion = setTimeout(() => {
+// Guarda la hora exacta (real, de reloj) en la que vence la sesion.
+function guardarExpiracion() {
+  localStorage.setItem(CLAVE_EXPIRA, String(Date.now() + DURACION_SESION_MS));
+}
+
+function borrarExpiracion() {
+  localStorage.removeItem(CLAVE_EXPIRA);
+}
+
+function sesionVencida() {
+  const expira = Number(localStorage.getItem(CLAVE_EXPIRA) || 0);
+  return Date.now() > expira;
+}
+
+// En vez de solo un setTimeout (que el navegador puede "pausar" cuando la
+// pestaña esta en segundo plano o el celular con la pantalla bloqueada),
+// revisamos la hora real cada 15 segundos Y apenas la pestaña vuelve a
+// estar activa. Asi, aunque el aviso no salte "al segundo", nunca deja
+// pasar mas tiempo del debido una vez que vuelves a mirar la pantalla.
+function revisarSesion() {
+  if (sesionVencida()) {
     borrarToken();
+    borrarExpiracion();
     mostrarLogin();
     mostrarMensajeLogin("Tu sesión expiró por inactividad. Inicia sesión de nuevo.", "error");
-  }, DURACION_SESION_MS);
+  }
+}
+
+function iniciarTemporizadorSesion() {
+  guardarExpiracion();
+  if (intervaloSesion) clearInterval(intervaloSesion);
+  intervaloSesion = setInterval(revisarSesion, 15000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible") revisarSesion();
+  });
 }
 
 function mostrarFormulario() {
@@ -93,7 +123,7 @@ function mostrarLogin() {
   vistaLogin.style.display = "block";
   vistaFormulario.style.display = "none";
   btnSalir.style.display = "none";
-  if (temporizadorSesion) clearTimeout(temporizadorSesion);
+  if (intervaloSesion) clearInterval(intervaloSesion);
 }
 
 formLogin.addEventListener("submit", (evento) => {
