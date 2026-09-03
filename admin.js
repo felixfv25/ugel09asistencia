@@ -1,243 +1,118 @@
-// admin.js
-// Logica del panel de administracion. Guarda el token de sesion en
-// localStorage (esto SI es un archivo normal que corre en el navegador del
-// usuario, no un artifact de Claude, asi que localStorage funciona bien
-// aqui y es lo apropiado para este caso).
+// routes/admin.js
+// Todo lo que solo el personal de la UGEL puede hacer, iniciando sesion:
+// editar la lista de areas y asuntos, y ver un reporte resumido.
+// Todas las rutas de este archivo exigen sesion valida (ver server.js).
 
-const API_URL = "/api";
-const CLAVE_TOKEN = "ugel09_admin_token";
+const express = require("express");
+const path = require("path");
+const db = require("../db");
 
-const vistaLogin = document.getElementById("vista-login");
-const vistaPanel = document.getElementById("vista-panel");
-const formLogin = document.getElementById("form-login");
-const mensajeLogin = document.getElementById("mensaje-login");
-const mensajePanel = document.getElementById("mensaje-panel");
-const btnSalir = document.getElementById("btn-salir");
+const router = express.Router();
 
-function mostrarMensaje(el, texto, tipo) {
-  el.textContent = texto;
-  el.className = `estado ${tipo}`;
-  el.style.display = "block";
-  setTimeout(() => (el.style.display = "none"), 4000);
-}
-
-function obtenerToken() {
-  return localStorage.getItem(CLAVE_TOKEN);
-}
-
-// Todas las llamadas al panel pasan por aqui, para incluir el token
-// automaticamente y manejar sesiones vencidas en un solo lugar.
-async function llamarAdmin(ruta, opciones = {}) {
-  const respuesta = await fetch(`${API_URL}/admin${ruta}`, {
-    ...opciones,
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${obtenerToken()}`,
-      ...(opciones.headers || {}),
-    },
-  });
-
-  if (respuesta.status === 401) {
-    cerrarSesionLocal();
-    throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
-  }
-
-  const datos = await respuesta.json();
-  if (!respuesta.ok) throw new Error(datos.error || "Ocurrió un error.");
-  return datos;
-}
-
-function mostrarPanel() {
-  vistaLogin.style.display = "none";
-  vistaPanel.style.display = "block";
-  btnSalir.style.display = "inline-block";
-  cargarAreas();
-  cargarAsuntos();
-}
-
-function mostrarLogin() {
-  vistaLogin.style.display = "block";
-  vistaPanel.style.display = "none";
-  btnSalir.style.display = "none";
-}
-
-function cerrarSesionLocal() {
-  localStorage.removeItem(CLAVE_TOKEN);
-  mostrarLogin();
-}
-
-// --- Login ---
-formLogin.addEventListener("submit", (evento) => {
-  evento.preventDefault();
-  const usuario = document.getElementById("usuario").value.trim();
-  const password = document.getElementById("password").value;
-
-  fetch(`${API_URL}/auth/login`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ usuario, password }),
-  })
-    .then(async (res) => {
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "No se pudo iniciar sesión.");
-      return data;
-    })
-    .then((data) => {
-      localStorage.setItem(CLAVE_TOKEN, data.token);
-      formLogin.reset();
-      mostrarPanel();
-    })
-    .catch((error) => mostrarMensaje(mensajeLogin, error.message, "error"));
-});
-
-btnSalir.addEventListener("click", () => {
-  fetch(`${API_URL}/auth/logout`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${obtenerToken()}` },
-  }).finally(cerrarSesionLocal);
+// --- Descargar copia de la base de datos ---
+// Solo lectura: descarga una copia del archivo, nunca lo modifica ni lo
+// borra. Como esta ruta ya exige sesion de admin (ver server.js), es
+// segura para dejarla permanente, sin tener que editar codigo cada vez
+// que alguien necesite revisar los datos.
+router.get("/descargar-base-de-datos", (req, res) => {
+  res.download(path.join(__dirname, "..", "..", "asistencia.db"), "asistencia.db");
 });
 
 // --- Áreas ---
-function cargarAreas() {
-  llamarAdmin("/areas")
-    .then((data) => {
-      const lista = document.getElementById("lista-areas");
-      lista.innerHTML = data.areas
-        .map(
-          (a) => `<li>${a.nombre} <button class="boton-quitar" data-tipo="areas" data-id="${a.id}">Quitar</button></li>`
-        )
-        .join("") || `<li>No hay áreas registradas.</li>`;
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
-}
 
-document.getElementById("btn-agregar-area").addEventListener("click", () => {
-  const input = document.getElementById("nueva-area");
-  const nombre = input.value.trim();
-  if (!nombre) return;
+router.get("/areas", (req, res) => {
+  const filas = db.prepare("SELECT id, nombre FROM areas ORDER BY nombre").all();
+  res.json({ areas: filas });
+});
 
-  llamarAdmin("/areas", { method: "POST", body: JSON.stringify({ nombre }) })
-    .then(() => {
-      input.value = "";
-      cargarAreas();
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
+router.post("/areas", (req, res) => {
+  const { nombre } = req.body || {};
+  if (!nombre || !nombre.trim()) {
+    return res.status(400).json({ error: "El nombre del área es obligatorio." });
+  }
+  try {
+    const resultado = db.prepare("INSERT INTO areas (nombre) VALUES (?)").run(nombre.trim());
+    res.status(201).json({ id: resultado.lastInsertRowid, nombre: nombre.trim() });
+  } catch (error) {
+    res.status(400).json({ error: "Esa área ya existe." });
+  }
+});
+
+router.delete("/areas/:id", (req, res) => {
+  db.prepare("DELETE FROM areas WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
 });
 
 // --- Asuntos ---
-function cargarAsuntos() {
-  llamarAdmin("/asuntos")
-    .then((data) => {
-      const lista = document.getElementById("lista-asuntos");
-      lista.innerHTML = data.asuntos
-        .map(
-          (a) => `<li>${a.nombre} <button class="boton-quitar" data-tipo="asuntos" data-id="${a.id}">Quitar</button></li>`
-        )
-        .join("") || `<li>No hay asuntos registrados.</li>`;
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
-}
 
-document.getElementById("btn-agregar-asunto").addEventListener("click", () => {
-  const input = document.getElementById("nuevo-asunto");
-  const nombre = input.value.trim();
-  if (!nombre) return;
-
-  llamarAdmin("/asuntos", { method: "POST", body: JSON.stringify({ nombre }) })
-    .then(() => {
-      input.value = "";
-      cargarAsuntos();
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
+router.get("/asuntos", (req, res) => {
+  const filas = db.prepare("SELECT id, nombre FROM asuntos ORDER BY nombre").all();
+  res.json({ asuntos: filas });
 });
 
-// Un solo listener para los botones "Quitar" de ambas listas (delegacion).
-document.getElementById("vista-panel").addEventListener("click", (evento) => {
-  const boton = evento.target.closest(".boton-quitar");
-  if (!boton) return;
-
-  const { tipo, id } = boton.dataset;
-  if (!confirm("¿Seguro que quieres quitar esta opción?")) return;
-
-  llamarAdmin(`/${tipo}/${id}`, { method: "DELETE" })
-    .then(() => (tipo === "areas" ? cargarAreas() : cargarAsuntos()))
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
+router.post("/asuntos", (req, res) => {
+  const { nombre } = req.body || {};
+  if (!nombre || !nombre.trim()) {
+    return res.status(400).json({ error: "El nombre del asunto es obligatorio." });
+  }
+  try {
+    const resultado = db.prepare("INSERT INTO asuntos (nombre) VALUES (?)").run(nombre.trim());
+    res.status(201).json({ id: resultado.lastInsertRowid, nombre: nombre.trim() });
+  } catch (error) {
+    res.status(400).json({ error: "Ese asunto ya existe." });
+  }
 });
 
-// --- Reporte ---
-const hoyISO = new Date().toISOString().slice(0, 10);
-document.getElementById("reporte-desde").value = hoyISO;
-document.getElementById("reporte-hasta").value = hoyISO;
-
-document.getElementById("btn-generar-reporte").addEventListener("click", () => {
-  const desde = document.getElementById("reporte-desde").value;
-  const hasta = document.getElementById("reporte-hasta").value;
-  const cuerpo = document.getElementById("cuerpo-reporte");
-
-  llamarAdmin(`/reporte?desde=${desde}&hasta=${hasta}`)
-    .then((data) => {
-      if (data.porArea.length === 0) {
-        cuerpo.innerHTML = `<tr><td colspan="2" class="celda-vacia">No hay visitas en ese rango de fechas.</td></tr>`;
-        return;
-      }
-      cuerpo.innerHTML =
-        data.porArea.map((f) => `<tr><td>${f.area}</td><td>${f.total}</td></tr>`).join("") +
-        `<tr><td><strong>Total</strong></td><td><strong>${data.totalGeneral}</strong></td></tr>`;
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
+router.delete("/asuntos/:id", (req, res) => {
+  db.prepare("DELETE FROM asuntos WHERE id = ?").run(req.params.id);
+  res.json({ ok: true });
 });
 
-// --- Crear usuario administrador ---
-document.getElementById("btn-crear-usuario").addEventListener("click", () => {
-  const usuario = document.getElementById("nuevo-usuario").value.trim();
-  const password = document.getElementById("nueva-password").value;
+// --- Usuarios administradores ---
+// Permite crear más usuarios desde el propio panel, sin usar la terminal.
 
-  llamarAdmin("/usuarios", { method: "POST", body: JSON.stringify({ usuario, password }) })
-    .then(() => {
-      document.getElementById("nuevo-usuario").value = "";
-      document.getElementById("nueva-password").value = "";
-      mostrarMensaje(mensajePanel, `Usuario "${usuario}" creado correctamente.`, "ok");
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"));
+router.post("/usuarios", (req, res) => {
+  const { usuario, password } = req.body || {};
+  if (!usuario || !password) {
+    return res.status(400).json({ error: "Usuario y contraseña son obligatorios." });
+  }
+  if (password.length < 6) {
+    return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres." });
+  }
+
+  const { hashPassword } = require("../auth");
+  try {
+    db.prepare("INSERT INTO usuarios (usuario, password_hash) VALUES (?, ?)").run(
+      usuario.trim(),
+      hashPassword(password)
+    );
+    res.status(201).json({ ok: true });
+  } catch (error) {
+    res.status(400).json({ error: "Ese nombre de usuario ya existe." });
+  }
 });
 
-// --- Descargar base de datos (copia de solo lectura) ---
-document.getElementById("btn-descargar-db").addEventListener("click", () => {
-  const boton = document.getElementById("btn-descargar-db");
-  boton.disabled = true;
-  boton.textContent = "Descargando...";
+// --- Reporte resumido ---
+// Total de visitas por área, dentro de un rango de fechas.
 
-  fetch(`${API_URL}/admin/descargar-base-de-datos`, {
-    headers: { Authorization: `Bearer ${obtenerToken()}` },
-  })
-    .then(async (res) => {
-      if (res.status === 401) {
-        cerrarSesionLocal();
-        throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
-      }
-      if (!res.ok) throw new Error("No se pudo descargar la base de datos.");
-      return res.blob();
-    })
-    .then((blob) => {
-      const url = URL.createObjectURL(blob);
-      const enlace = document.createElement("a");
-      enlace.href = url;
-      enlace.download = `asistencia_${hoyISO}.db`;
-      document.body.appendChild(enlace);
-      enlace.click();
-      enlace.remove();
-      URL.revokeObjectURL(url);
-    })
-    .catch((error) => mostrarMensaje(mensajePanel, error.message, "error"))
-    .finally(() => {
-      boton.disabled = false;
-      boton.textContent = "Descargar base de datos";
-    });
+router.get("/reporte", (req, res) => {
+  const hoy = new Date().toISOString().slice(0, 10);
+  const desde = req.query.desde || hoy;
+  const hasta = req.query.hasta || hoy;
+
+  const porArea = db
+    .prepare(
+      `SELECT area, COUNT(*) AS total
+       FROM registros
+       WHERE fecha BETWEEN ? AND ?
+       GROUP BY area
+       ORDER BY total DESC`
+    )
+    .all(desde, hasta);
+
+  const totalGeneral = porArea.reduce((suma, fila) => suma + fila.total, 0);
+
+  res.json({ desde, hasta, totalGeneral, porArea });
 });
 
-// --- Al cargar la página: ¿ya hay una sesión guardada? ---
-if (obtenerToken()) {
-  mostrarPanel();
-} else {
-  mostrarLogin();
-}
+module.exports = router;
