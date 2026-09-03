@@ -27,11 +27,13 @@ function verificarPassword(password, guardado) {
 // lo cual esta bien para este sistema (solo hay que volver a iniciar sesion).
 
 const sesiones = new Map(); // token -> { usuario, expira }
-const DURACION_SESION_MS = 8 * 60 * 60 * 1000; // 8 horas
+const DURACION_SESION_MS = 8 * 60 * 60 * 1000; // 8 horas (para el admin)
+const DURACION_SESION_PORTERIA_MS = 20 * 60 * 1000; // 20 minutos
 
 function crearSesion(usuario) {
   const token = crypto.randomBytes(32).toString("hex");
-  sesiones.set(token, { usuario, expira: Date.now() + DURACION_SESION_MS });
+  const duracion = usuario === "porteria" ? DURACION_SESION_PORTERIA_MS : DURACION_SESION_MS;
+  sesiones.set(token, { usuario, expira: Date.now() + duracion });
   return token;
 }
 
