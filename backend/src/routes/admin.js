@@ -4,9 +4,19 @@
 // Todas las rutas de este archivo exigen sesion valida (ver server.js).
 
 const express = require("express");
+const path = require("path");
 const db = require("../db");
 
 const router = express.Router();
+
+// --- Descargar copia de la base de datos ---
+// Solo lectura: descarga una copia del archivo, nunca lo modifica ni lo
+// borra. Como esta ruta ya exige sesion de admin (ver server.js), es
+// segura para dejarla permanente, sin tener que editar codigo cada vez
+// que alguien necesite revisar los datos.
+router.get("/descargar-base-de-datos", (req, res) => {
+  res.download(path.join(__dirname, "..", "..", "asistencia.db"), "asistencia.db");
+});
 
 // --- Áreas ---
 
