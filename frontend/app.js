@@ -68,18 +68,32 @@ function borrarToken() {
   localStorage.removeItem(CLAVE_TOKEN);
 }
 
+const DURACION_SESION_MS = 20 * 60 * 1000; // 20 minutos, igual que en el backend
+let temporizadorSesion = null;
+
+function iniciarTemporizadorSesion() {
+  if (temporizadorSesion) clearTimeout(temporizadorSesion);
+  temporizadorSesion = setTimeout(() => {
+    borrarToken();
+    mostrarLogin();
+    mostrarMensajeLogin("Tu sesión expiró por inactividad. Inicia sesión de nuevo.", "error");
+  }, DURACION_SESION_MS);
+}
+
 function mostrarFormulario() {
   vistaLogin.style.display = "none";
   vistaFormulario.style.display = "block";
   btnSalir.style.display = "inline-block";
   cargarOpciones();
   cargarVisitasHoy();
+  iniciarTemporizadorSesion();
 }
 
 function mostrarLogin() {
   vistaLogin.style.display = "block";
   vistaFormulario.style.display = "none";
   btnSalir.style.display = "none";
+  if (temporizadorSesion) clearTimeout(temporizadorSesion);
 }
 
 formLogin.addEventListener("submit", (evento) => {
