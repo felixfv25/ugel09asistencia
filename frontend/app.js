@@ -97,7 +97,6 @@ function revisarSesion() {
     borrarToken();
     borrarExpiracion();
     mostrarLogin();
-    mostrarMensajeLogin("Tu sesión expiró por inactividad. Inicia sesión de nuevo.", "error");
   }
 }
 
@@ -105,10 +104,13 @@ function iniciarTemporizadorSesion() {
   guardarExpiracion();
   if (intervaloSesion) clearInterval(intervaloSesion);
   intervaloSesion = setInterval(revisarSesion, 15000);
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible") revisarSesion();
-  });
 }
+
+// Este listener se agrega UNA sola vez (no cada vez que inicias sesion),
+// para revisar la hora real apenas vuelves a esta pestaña.
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible") revisarSesion();
+});
 
 function mostrarFormulario() {
   vistaLogin.style.display = "none";
