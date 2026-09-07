@@ -50,12 +50,14 @@ function dentroDeHorarioAtencion() {
 router.post("/", async (req, res) => {
   const { dni, nombres, apellidos, celular, area, asunto } = req.body || {};
 
-  if (!dentroDeHorarioAtencion()) {
+  //restricción
+  
+/*  if (!dentroDeHorarioAtencion()) {
     return res.status(403).json({
       error: `El registro de visitas solo está disponible de ${HORA_APERTURA} am a 3:30 pm.`,
     });
   }
-
+*/
   // Validaciones basicas: campos obligatorios y formato del DNI.
   if (!dni || !/^\d{8}$/.test(dni)) {
     return res.status(400).json({ error: "El DNI debe tener 8 dígitos." });
