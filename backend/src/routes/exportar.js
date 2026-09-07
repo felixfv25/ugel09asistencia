@@ -4,7 +4,7 @@
 
 const express = require("express");
 const ExcelJS = require("exceljs");
-const db = require("../db");
+const { db } = require("../db");
 
 const router = express.Router();
 
@@ -35,7 +35,8 @@ router.get("/", async (req, res) => {
 
   consulta += " ORDER BY r.fecha ASC, r.hora_ingreso ASC";
 
-  const filas = db.prepare(consulta).all(...parametros);
+  const resultado = await db.execute({ sql: consulta, args: parametros });
+  const filas = resultado.rows;
 
   // Armar el archivo Excel con los 9 campos solicitados.
   const workbook = new ExcelJS.Workbook();

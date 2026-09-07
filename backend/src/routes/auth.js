@@ -2,21 +2,25 @@
 // Login y logout del personal de la UGEL que administra el sistema.
 
 const express = require("express");
-const db = require("../db");
+const { db } = require("../db");
 const { verificarPassword, crearSesion, cerrarSesion } = require("../auth");
 
 const router = express.Router();
 
 // POST /api/auth/login
 // Body: { usuario, password }
-router.post("/login", (req, res) => {
+router.post("/login", async (req, res) => {
   const { usuario, password } = req.body || {};
 
   if (!usuario || !password) {
     return res.status(400).json({ error: "Usuario y contraseña son obligatorios." });
   }
 
-  const fila = db.prepare("SELECT usuario, password_hash FROM usuarios WHERE usuario = ?").get(usuario);
+  const resultado = await db.execute({
+    sql: "SELECT usuario, password_hash FROM usuarios WHERE usuario = ?",
+    args: [usuario],
+  });
+  const fila = resultado.rows[0];
 
   if (!fila || !verificarPassword(password, fila.password_hash)) {
     return res.status(401).json({ error: "Usuario o contraseña incorrectos." });

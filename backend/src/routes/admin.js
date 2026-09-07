@@ -4,74 +4,71 @@
 // Todas las rutas de este archivo exigen sesion valida (ver server.js).
 
 const express = require("express");
-const path = require("path");
-const db = require("../db");
+const { db } = require("../db");
+const { hashPassword } = require("../auth");
 
 const router = express.Router();
 
-// --- Descargar copia de la base de datos ---
-// Solo lectura: descarga una copia del archivo, nunca lo modifica ni lo
-// borra. Como esta ruta ya exige sesion de admin (ver server.js), es
-// segura para dejarla permanente, sin tener que editar codigo cada vez
-// que alguien necesite revisar los datos.
-router.get("/descargar-base-de-datos", (req, res) => {
-  res.download(path.join(__dirname, "..", "..", "asistencia.db"), "asistencia.db");
-});
-
 // --- Áreas ---
 
-router.get("/areas", (req, res) => {
-  const filas = db.prepare("SELECT id, nombre FROM areas ORDER BY nombre").all();
-  res.json({ areas: filas });
+router.get("/areas", async (req, res) => {
+  const resultado = await db.execute("SELECT id, nombre FROM areas ORDER BY nombre");
+  res.json({ areas: resultado.rows });
 });
 
-router.post("/areas", (req, res) => {
+router.post("/areas", async (req, res) => {
   const { nombre } = req.body || {};
   if (!nombre || !nombre.trim()) {
     return res.status(400).json({ error: "El nombre del área es obligatorio." });
   }
   try {
-    const resultado = db.prepare("INSERT INTO areas (nombre) VALUES (?)").run(nombre.trim());
-    res.status(201).json({ id: resultado.lastInsertRowid, nombre: nombre.trim() });
+    const resultado = await db.execute({
+      sql: "INSERT INTO areas (nombre) VALUES (?)",
+      args: [nombre.trim()],
+    });
+    res.status(201).json({ id: Number(resultado.lastInsertRowid), nombre: nombre.trim() });
   } catch (error) {
     res.status(400).json({ error: "Esa área ya existe." });
   }
 });
 
-router.delete("/areas/:id", (req, res) => {
-  db.prepare("DELETE FROM areas WHERE id = ?").run(req.params.id);
+router.delete("/areas/:id", async (req, res) => {
+  await db.execute({ sql: "DELETE FROM areas WHERE id = ?", args: [req.params.id] });
   res.json({ ok: true });
 });
 
 // --- Asuntos ---
 
-router.get("/asuntos", (req, res) => {
-  const filas = db.prepare("SELECT id, nombre FROM asuntos ORDER BY nombre").all();
-  res.json({ asuntos: filas });
+router.get("/asuntos", async (req, res) => {
+  const resultado = await db.execute("SELECT id, nombre FROM asuntos ORDER BY nombre");
+  res.json({ asuntos: resultado.rows });
 });
 
-router.post("/asuntos", (req, res) => {
+router.post("/asuntos", async (req, res) => {
   const { nombre } = req.body || {};
   if (!nombre || !nombre.trim()) {
     return res.status(400).json({ error: "El nombre del asunto es obligatorio." });
   }
   try {
-    const resultado = db.prepare("INSERT INTO asuntos (nombre) VALUES (?)").run(nombre.trim());
-    res.status(201).json({ id: resultado.lastInsertRowid, nombre: nombre.trim() });
+    const resultado = await db.execute({
+      sql: "INSERT INTO asuntos (nombre) VALUES (?)",
+      args: [nombre.trim()],
+    });
+    res.status(201).json({ id: Number(resultado.lastInsertRowid), nombre: nombre.trim() });
   } catch (error) {
     res.status(400).json({ error: "Ese asunto ya existe." });
   }
 });
 
-router.delete("/asuntos/:id", (req, res) => {
-  db.prepare("DELETE FROM asuntos WHERE id = ?").run(req.params.id);
+router.delete("/asuntos/:id", async (req, res) => {
+  await db.execute({ sql: "DELETE FROM asuntos WHERE id = ?", args: [req.params.id] });
   res.json({ ok: true });
 });
 
 // --- Usuarios administradores ---
 // Permite crear más usuarios desde el propio panel, sin usar la terminal.
 
-router.post("/usuarios", (req, res) => {
+router.post("/usuarios", async (req, res) => {
   const { usuario, password } = req.body || {};
   if (!usuario || !password) {
     return res.status(400).json({ error: "Usuario y contraseña son obligatorios." });
@@ -80,12 +77,11 @@ router.post("/usuarios", (req, res) => {
     return res.status(400).json({ error: "La contraseña debe tener al menos 6 caracteres." });
   }
 
-  const { hashPassword } = require("../auth");
   try {
-    db.prepare("INSERT INTO usuarios (usuario, password_hash) VALUES (?, ?)").run(
-      usuario.trim(),
-      hashPassword(password)
-    );
+    await db.execute({
+      sql: "INSERT INTO usuarios (usuario, password_hash) VALUES (?, ?)",
+      args: [usuario.trim(), hashPassword(password)],
+    });
     res.status(201).json({ ok: true });
   } catch (error) {
     res.status(400).json({ error: "Ese nombre de usuario ya existe." });
@@ -95,20 +91,20 @@ router.post("/usuarios", (req, res) => {
 // --- Reporte resumido ---
 // Total de visitas por área, dentro de un rango de fechas.
 
-router.get("/reporte", (req, res) => {
+router.get("/reporte", async (req, res) => {
   const hoy = new Date().toISOString().slice(0, 10);
   const desde = req.query.desde || hoy;
   const hasta = req.query.hasta || hoy;
 
-  const porArea = db
-    .prepare(
-      `SELECT area, COUNT(*) AS total
-       FROM registros
-       WHERE fecha BETWEEN ? AND ?
-       GROUP BY area
-       ORDER BY total DESC`
-    )
-    .all(desde, hasta);
+  const resultado = await db.execute({
+    sql: `SELECT area, COUNT(*) AS total
+          FROM registros
+          WHERE fecha BETWEEN ? AND ?
+          GROUP BY area
+          ORDER BY total DESC`,
+    args: [desde, hasta],
+  });
+  const porArea = resultado.rows.map((f) => ({ area: f.area, total: Number(f.total) }));
 
   const totalGeneral = porArea.reduce((suma, fila) => suma + fila.total, 0);
 

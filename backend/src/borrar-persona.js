@@ -7,29 +7,40 @@
 //   node src/borrar-persona.js 12345678
 //
 // OJO: esto borra tanto a la persona como TODOS sus registros de visita
-// (no se puede deshacer). Si solo quieres borrar una visita puntual y
-// no a la persona completa, avisa y hacemos un script aparte para eso.
+// (no se puede deshacer).
 
-const db = require("./db");
+const { db, inicializar } = require("./db");
 
 const [, , dni] = process.argv;
 
-if (!dni) {
-  console.log("Uso: node src/borrar-persona.js <dni>");
-  console.log("Ejemplo: node src/borrar-persona.js 12345678");
-  process.exit(1);
+async function main() {
+  if (!dni) {
+    console.log("Uso: node src/borrar-persona.js <dni>");
+    console.log("Ejemplo: node src/borrar-persona.js 12345678");
+    process.exit(1);
+  }
+
+  await inicializar();
+
+  const buscar = await db.execute({
+    sql: "SELECT dni, nombres, apellidos FROM personas WHERE dni = ?",
+    args: [dni],
+  });
+  const persona = buscar.rows[0];
+
+  if (!persona) {
+    console.log(`No se encontró ninguna persona con DNI ${dni}.`);
+    process.exit(0);
+  }
+
+  const registros = await db.execute({ sql: "DELETE FROM registros WHERE dni = ?", args: [dni] });
+  await db.execute({ sql: "DELETE FROM personas WHERE dni = ?", args: [dni] });
+
+  console.log(
+    `Listo. Se borró a ${persona.nombres} ${persona.apellidos} (DNI ${dni}) y sus ${Number(
+      registros.rowsAffected
+    )} visita(s) registrada(s).`
+  );
 }
 
-const persona = db.prepare("SELECT dni, nombres, apellidos FROM personas WHERE dni = ?").get(dni);
-
-if (!persona) {
-  console.log(`No se encontró ninguna persona con DNI ${dni}.`);
-  process.exit(0);
-}
-
-const registros = db.prepare("DELETE FROM registros WHERE dni = ?").run(dni);
-db.prepare("DELETE FROM personas WHERE dni = ?").run(dni);
-
-console.log(
-  `Listo. Se borró a ${persona.nombres} ${persona.apellidos} (DNI ${dni}) y sus ${registros.changes} visita(s) registrada(s).`
-);
+main();

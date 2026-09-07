@@ -6,7 +6,7 @@ const os = require("os");
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
-const db = require("./db");
+const { db, inicializar } = require("./db");
 const { requiereSesion } = require("./auth");
 const personasRouter = require("./routes/personas");
 const registrosRouter = require("./routes/registros");
@@ -30,10 +30,13 @@ app.get("/api/salud", (req, res) => {
 // desplegables de Area y Asunto. Ahora se leen de la base de datos, para
 // que el panel de administracion las pueda editar sin tocar codigo.
 // Exige sesion (login de porteria) igual que el resto del formulario.
-app.get("/api/opciones", requiereSesion, (req, res) => {
-  const areas = db.prepare("SELECT nombre FROM areas ORDER BY nombre").all().map((f) => f.nombre);
-  const asuntos = db.prepare("SELECT nombre FROM asuntos ORDER BY nombre").all().map((f) => f.nombre);
-  res.json({ areas, asuntos });
+app.get("/api/opciones", requiereSesion, async (req, res) => {
+  const areasResultado = await db.execute("SELECT nombre FROM areas ORDER BY nombre");
+  const asuntosResultado = await db.execute("SELECT nombre FROM asuntos ORDER BY nombre");
+  res.json({
+    areas: areasResultado.rows.map((f) => f.nombre),
+    asuntos: asuntosResultado.rows.map((f) => f.nombre),
+  });
 });
 
 // Todo lo que usa la pantalla de registro (porteria) exige haber
@@ -46,7 +49,6 @@ app.use("/api/auth", authRouter);
 
 // Todo lo que empiece con /api/admin exige haber iniciado sesion primero.
 app.use("/api/admin", requiereSesion, adminRouter);
-
 
 // Sirve los archivos del frontend (HTML, CSS, JS)
 app.use(express.static(path.join(__dirname, "../../frontend")));
@@ -69,14 +71,27 @@ function obtenerIpLocal() {
   return null;
 }
 
-// "0.0.0.0" hace que el servidor escuche en TODAS las redes de la
-// computadora, no solo en localhost. Esto es necesario para que, mas
-// adelante, un celular conectado al mismo WiFi (o la futura app movil)
-// pueda conectarse usando la IP de esta PC en vez de "localhost".
-app.listen(PUERTO, "0.0.0.0", () => {
-  const ipLocal = obtenerIpLocal();
-  console.log(`Servidor UGEL 09 escuchando en http://localhost:${PUERTO}`);
-  if (ipLocal) {
-    console.log(`También accesible desde otros dispositivos en la misma red WiFi en: http://${ipLocal}:${PUERTO}`);
-  }
+async function iniciarServidor() {
+  // Espera a que las tablas existan y los datos iniciales esten sembrados
+  // ANTES de aceptar cualquier pedido.
+  await inicializar();
+
+  // "0.0.0.0" hace que el servidor escuche en TODAS las redes de la
+  // computadora, no solo en localhost. Esto es necesario para que, mas
+  // adelante, un celular conectado al mismo WiFi (o la futura app movil)
+  // pueda conectarse usando la IP de esta PC en vez de "localhost".
+  app.listen(PUERTO, "0.0.0.0", () => {
+    const ipLocal = obtenerIpLocal();
+    console.log(`Servidor UGEL 09 escuchando en http://localhost:${PUERTO}`);
+    if (ipLocal) {
+      console.log(
+        `También accesible desde otros dispositivos en la misma red WiFi en: http://${ipLocal}:${PUERTO}`
+      );
+    }
+  });
+}
+
+iniciarServidor().catch((error) => {
+  console.error("No se pudo iniciar el servidor (revisa la conexión con Turso):", error);
+  process.exit(1);
 });
