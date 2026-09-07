@@ -32,7 +32,7 @@ function horaActualPeru() {
 
 // Horario de atencion: 8:30am a 3:30pm, hora de Peru (America/Lima).
 const HORA_APERTURA = "08:00";
-const HORA_CIERRE = "15:30";
+const HORA_CIERRE = "20:30";
 
 function dentroDeHorarioAtencion() {
   const horaLima = new Intl.DateTimeFormat("es-PE", {
