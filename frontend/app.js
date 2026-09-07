@@ -177,7 +177,9 @@ async function llamarConSesion(url, opciones = {}) {
   if (respuesta.status === 401) {
     borrarToken();
     mostrarLogin();
-    throw new Error("Tu sesión expiró. Inicia sesión de nuevo.");
+    const error = new Error("Tu sesión expiró. Inicia sesión de nuevo.");
+    error.esSesionExpirada = true; // para que quien llame decida no mostrar nada
+    throw error;
   }
 
   return respuesta;
@@ -202,6 +204,7 @@ function cargarOpciones() {
       llenarSelect(areaExportar, data.areas);
     })
     .catch((error) => {
+      if (error.esSesionExpirada) return; // ya se le mostró el login, sin alarmar de más
       mostrarMensaje(error.message || "No se pudo conectar con el servidor.", "error");
     });
 }
