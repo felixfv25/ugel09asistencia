@@ -8,10 +8,25 @@ const db = require("../db");
 const router = express.Router();
 
 function horaActualPeru() {
-  // Fecha y hora del servidor, en formato legible.
+  // Fecha y hora real de Peru (America/Lima), sin importar en que zona
+  // horaria este el servidor (Render corre en UTC por defecto, 5 horas
+  // adelantado a Peru, asi que antes esto guardaba la hora mal).
   const ahora = new Date();
-  const fecha = ahora.toISOString().slice(0, 10); // YYYY-MM-DD
-  const hora = ahora.toTimeString().slice(0, 5); // HH:MM
+
+  const fecha = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "America/Lima",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).format(ahora); // "en-CA" da directo el formato YYYY-MM-DD
+
+  const hora = new Intl.DateTimeFormat("es-PE", {
+    timeZone: "America/Lima",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  }).format(ahora); // "HH:MM"
+
   return { fecha, hora };
 }
 
