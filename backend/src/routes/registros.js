@@ -31,7 +31,7 @@ function horaActualPeru() {
 }
 
 // Horario de atencion: 8:30am a 3:30pm, hora de Peru (America/Lima).
-const HORA_APERTURA = "08:30";
+const HORA_APERTURA = "08:00";
 const HORA_CIERRE = "15:30";
 
 function dentroDeHorarioAtencion() {
@@ -52,12 +52,12 @@ router.post("/", async (req, res) => {
 
   //restricción
   
-/*  if (!dentroDeHorarioAtencion()) {
+  if (!dentroDeHorarioAtencion()) {
     return res.status(403).json({
       error: `El registro de visitas solo está disponible de ${HORA_APERTURA} am a 3:30 pm.`,
     });
   }
-*/
+
   // Validaciones basicas: campos obligatorios y formato del DNI.
   if (!dni || !/^\d{8}$/.test(dni)) {
     return res.status(400).json({ error: "El DNI debe tener 8 dígitos." });
